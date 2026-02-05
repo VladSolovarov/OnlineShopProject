@@ -1,5 +1,5 @@
-from sqlalchemy import String, Boolean, CheckConstraint
-from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy import String, Boolean, ForeignKey
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.database import Base
 
@@ -9,11 +9,24 @@ class Category(Base):
 
     id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
     name: Mapped[str] = mapped_column(String(50), nullable=False)
+    parent_id: Mapped[int | None] = mapped_column(ForeignKey('categories.id'), nullable=True)
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)
 
 
-if __name__ == "__main__":
-    from sqlalchemy.schema import CreateTable
-    from app.models.products import Product
-    print(CreateTable(Category.__table__))
-    print(CreateTable(Product.__table__))
+    products: Mapped[list['Product']] = relationship(
+        'Product',
+        uselist=True,
+        back_populates='category'
+    )
+
+    parent: Mapped['Category | None'] = relationship(
+        'Category',
+        back_populates='children',
+        remote_side='Category.id'
+    )
+
+    children: Mapped[list['Category']] = relationship(
+        'Category',
+        uselist=True,
+        back_populates='parent'
+    )
