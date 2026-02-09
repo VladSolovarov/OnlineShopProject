@@ -13,7 +13,6 @@ class Product(Base):
         CheckConstraint('price >= 0', name='check_price_positive')
     )
 
-
     id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
     name: Mapped[str] = mapped_column(String(100), nullable=False)
     description: Mapped[str | None] = mapped_column(String(500), nullable=True)
