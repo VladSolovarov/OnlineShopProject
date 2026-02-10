@@ -66,14 +66,11 @@ async def delete_category(category_id: int, db: Session = Depends(get_db)):
     """Set is_active=False of Category by id"""
     stmt = select(CategoryModel).where(CategoryModel.id == category_id,
                                        CategoryModel.id == True)
-    category = db.scalars(stmt).first()
-    if category is None:
+    db_category = db.scalars(stmt).first()
+    if db_category is None:
         raise HTTPException(status_code=404,
                             detail='Category not found or already inactive')
 
-    db.execute(update(CategoryModel)
-               .where(CategoryModel.id == category_id)
-               .values(is_active=False)
-               )
+    db_category.is_active = False
     db.commit()
     return {"status": "success", "message": "Category marked as inactive"}
