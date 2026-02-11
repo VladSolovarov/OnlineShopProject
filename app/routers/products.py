@@ -6,7 +6,7 @@ from sqlalchemy import select, update
 
 from app.schemas import Product as ProductSchema, ProductCreate
 from app.models.categories import Category as CategoryModel
-from app.models.products import Product as ProductModel
+from app.models.products import CategoryCreate as ProductModel
 from app.db_depends import get_db
 from app.routers.db_operations import get_products_from_db, check_category, get_product_by_id, create_and_get_product, \
     update_and_get_product, delete_product_by_id

@@ -2,12 +2,12 @@ from fastapi import HTTPException, status
 from sqlalchemy.orm import Session
 from sqlalchemy import select, update
 from app.models.categories import Category as CategoryModel
-from app.models.products import Product as ProductModel
+from app.models.products import CategoryCreate as ProductModel
 from app.schemas import (CategoryCreate,
                          Category as CategorySchema,
                          Product as ProductSchema, ProductCreate)
 
-
+#PRODUCT ROUTERS
 async def get_products_from_db(db: Session, category_id: int | None = None):
     if category_id is not None:
         await check_category(category_id, db)
@@ -19,14 +19,6 @@ async def get_products_from_db(db: Session, category_id: int | None = None):
                                                               ProductModel.stock > 0)
     products = db.scalars(stmt).all()
     return products
-
-
-async def check_category(category_id: int, db: Session) -> None:
-    category_stmt = select(CategoryModel).where(CategoryModel.id == category_id,
-                                                CategoryModel.is_active == True)
-    if db.scalars(category_stmt).first() is None:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST,
-                            detail='Category not found or inactive')
 
 
 async def get_product_by_id(product_id: int, db: Session):
@@ -65,6 +57,62 @@ async def delete_product_by_id(product_id: int, db: Session):
     db.execute(update(ProductModel)
                .where(ProductModel.id == product_id,
                       ProductModel.is_active == True)
+               .values(is_active=False)
+               )
+    db.commit()
+
+#CATEGORY ROUTERS
+async def get_categories_from_db(db: Session):
+    stmt = select(CategoryModel).where(CategoryModel.is_active == True)
+    return db.scalars(stmt).all()
+
+
+async def get_category_by_id(category_id, db):
+    stmt = select(CategoryModel).where(CategoryModel.id == category_id,
+                                       CategoryModel.is_active == True)
+    db_category = db.scalars(stmt).first()
+    if db_category is None:
+        raise HTTPException(status_code=404,
+                            detail="Category not found or inactive")
+    return db_category
+
+
+async def check_category(category_id: int, db: Session) -> None:
+    category_stmt = select(CategoryModel).where(CategoryModel.id == category_id,
+                                                CategoryModel.is_active == True)
+    if db.scalars(category_stmt).first() is None:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST,
+                            detail='Category not found or inactive')
+
+
+async def create_and_get_category(category: CategoryCreate, db: Session):
+    db_category = CategoryModel(**category.model_dump())
+    db.add(db_category)
+    db.commit()
+    db.refresh(db_category)
+    return db_category
+
+
+async def update_and_get_category(category_id: int, category: CategoryCreate, db: Session):
+    db_category = await get_category_by_id(category_id, db)
+    if category.parent_id is not None:
+        await check_category(category.parent_id, db)
+
+    db.execute(update(CategoryModel)
+               .where(CategoryModel.id == category_id)
+               .values(**category.model_dump())
+               )
+
+    db.commit()
+    db.refresh(db_category)
+    return db_category
+
+
+async def delete_category_by_id(category_id: int, db: Session):
+    await get_category_by_id(category_id, db)
+    db.execute(update(CategoryModel)
+               .where(CategoryModel.id == category_id,
+                      CategoryModel.is_active == True)
                .values(is_active=False)
                )
     db.commit()

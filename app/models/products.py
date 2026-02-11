@@ -6,7 +6,7 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 from app.database import Base
 
 
-class Product(Base):
+class CategoryCreate(Base):
     __tablename__ = 'products'
     __table_args__ = (
         CheckConstraint('stock >= 0', name='check_stock_positive'),
