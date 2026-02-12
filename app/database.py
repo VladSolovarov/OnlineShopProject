@@ -15,18 +15,9 @@ class DatabaseConfig(ConfigBase):
 
     URL: SecretStr
 
-
-DATABASE_URL = "sqlite:///ecommerce.db"
-
-engine = create_engine(DATABASE_URL, echo=True)
-
-SessionLocal = sessionmaker(bind=engine)
-
-
-class Base(DeclarativeBase):
-    pass
 #Async connection to PostgreSQL
-DATABASE_URL = DatabaseConfig.URL.get_secret_value()
+db_cfg = DatabaseConfig()
+DATABASE_URL = db_cfg.URL.get_secret_value()
 
 async_engine = create_async_engine(DATABASE_URL,
                                    echo=True)

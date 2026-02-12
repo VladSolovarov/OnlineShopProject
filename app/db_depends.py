@@ -1,13 +1,9 @@
-from sqlalchemy.orm import Session
-from collections.abc import Generator
+#ASYNC SESSION
+from collections.abc import AsyncGenerator
+from sqlalchemy.ext.asyncio import AsyncSession
+from app.database import async_session_maker
 
-from app.database import SessionLocal
-
-
-def get_db() -> Generator[Session, None, None]:
-    """Creates a new session on request and close"""
-    db: Session = SessionLocal()
-    try:
-        yield db
-    finally:
-        db.close()
+async def get_async_db() -> AsyncGenerator[AsyncSession, None]:
+    """Yield async sqlalchemy session for using db"""
+    async with async_session_maker() as session:
+        yield session

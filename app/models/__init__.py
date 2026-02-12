@@ -1,4 +1,4 @@
-from .products import CategoryCreate
+from .products import Product
 from .categories import Category
 
-__all__ = ["Category", "CategoryCreate"]
+__all__ = ["Category", "Product"]
