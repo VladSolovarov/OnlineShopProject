@@ -1,16 +1,19 @@
 from fastapi import HTTPException, status
-from sqlalchemy.orm import Session
+from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy import select, update
+
+from app.auth import hash_password, verify_password, create_access_token
 from app.models.categories import Category as CategoryModel
 from app.models.products import Product as ProductModel
+from app.models.users import User as UserModel
 from app.schemas import (CategoryCreate,
                          Category as CategorySchema,
-                         Product as ProductSchema, ProductCreate)
+                         Product as ProductSchema, ProductCreate, UserCreate)
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
 
-#PRODUCT ROUTERS
+#PRODUCT OPERATIONS
 async def get_products_from_db(db: AsyncSession, category_id: int | None = None):
     if category_id is not None:
         await check_category(category_id, db)
@@ -66,7 +69,8 @@ async def delete_product_by_id(product_id: int, db: AsyncSession):
                )
     await db.commit()
 
-#CATEGORY ROUTERS
+
+#CATEGORY OPERATIONS
 async def get_categories_from_db(db: AsyncSession):
     stmt = select(CategoryModel).where(CategoryModel.is_active == True)
     result = await db.scalars(stmt)
@@ -125,3 +129,44 @@ async def delete_category_by_id(category_id: int, db: AsyncSession):
                .values(is_active=False)
                )
     await db.commit()
+
+
+#USER OPERATIONS
+async def check_email(user: UserCreate, db: AsyncSession):
+    stmt = select(UserModel).where(UserModel.email == user.email)
+    result = (await db.scalars(stmt)).first()
+    if result is not None:
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT,
+                            detail="Email is already registered")
+
+
+async def create_and_get_user(user: UserCreate, db: AsyncSession):
+    db_user = UserModel(email=user.email,
+                        hashed_password=hash_password(user.password.get_secret_value()),
+                        role=user.role)
+
+    db.add(db_user)
+    await db.commit()
+    await db.refresh(db_user)
+    return db_user
+
+
+async def authenticate_user(form_data: OAuth2PasswordRequestForm,
+                            db: AsyncSession):
+    user_stmt = select(UserModel).where(UserModel.email == form_data.username,
+                                        UserModel.is_active == True)
+    db_user = (await db.scalars(user_stmt)).first()
+    if db_user is None or not verify_password(form_data.password, db_user.hashed_password):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Incorrect email or password",
+            headers={"WWW-Authenticate": "Bearer"}
+        )
+    access_token = create_access_token(
+        data={
+        "sub": db_user.email,
+        "role": db_user.role,
+        "id": db_user.id
+        })
+
+    return access_token

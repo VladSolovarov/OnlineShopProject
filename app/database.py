@@ -2,18 +2,15 @@ from pydantic import SecretStr
 from sqlalchemy import create_engine
 from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker, AsyncSession
 from sqlalchemy.orm import sessionmaker, DeclarativeBase
-from pydantic_settings import BaseSettings, SettingsConfigDict
+from pydantic_settings import SettingsConfigDict
 
+from app.config import ConfigBase
 
-class ConfigBase(BaseSettings):
-    model_config = SettingsConfigDict(
-        env_file='.env', env_file_encoding='utf-8', extra='ignore'
-    )
 
 class DatabaseConfig(ConfigBase):
+    URL: SecretStr
     model_config = SettingsConfigDict(env_prefix='DATABASE_')
 
-    URL: SecretStr
 
 #Async connection to PostgreSQL
 db_cfg = DatabaseConfig()

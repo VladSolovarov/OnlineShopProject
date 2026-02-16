@@ -1,6 +1,6 @@
 from decimal import Decimal
 from typing import Annotated
-from pydantic import BaseModel, Field, ConfigDict
+from pydantic import BaseModel, Field, ConfigDict, EmailStr, SecretStr
 
 
 class CategoryCreate(BaseModel):
@@ -115,3 +115,39 @@ class Product(BaseModel):
 
     model_config = ConfigDict(from_attributes=True)
 
+
+class UserCreate(BaseModel):
+    email: Annotated[EmailStr, Field(
+        max_length=100,
+        description="User email"
+    )]
+
+    password: Annotated[SecretStr, Field(
+        min_length=8,
+        description="Password (At least 8 symbols)"
+    )]
+
+    role: Annotated[str, Field(
+        default="buyer",
+        pattern=r"^(buyer|seller)$",
+        description="Role ('buyer' or 'seller')"
+    )]
+
+
+class User(BaseModel):
+    id: Annotated[int, Field(
+        description="Unique user ID"
+    )]
+
+    email: Annotated[EmailStr, Field(
+        description="Unique user email"
+    )]
+
+    is_active: Annotated[bool, Field(
+        description="Is user active"
+    )]
+    role: Annotated[str, Field(
+        description="What role does user have"
+    )]
+
+    model_config = ConfigDict(from_attributes=True)
