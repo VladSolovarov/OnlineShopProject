@@ -8,7 +8,7 @@ from app.models.products import Product as ProductModel
 from app.models.users import User as UserModel
 from app.schemas import (CategoryCreate,
                          Category as CategorySchema,
-                         Product as ProductSchema, ProductCreate, UserCreate)
+                         Product as ProductSchema, ProductCreate, UserCreate, UserRoleUpdate)
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -39,35 +39,44 @@ async def get_product_by_id(product_id: int, db: AsyncSession):
     return db_product
 
 
-async def create_and_get_product(product: ProductCreate, db: AsyncSession):
-    db_product = ProductModel(**product.model_dump())
+async def create_and_get_product(product: ProductCreate,
+                                 db: AsyncSession,
+                                 current_seller: UserModel):
+    db_product = ProductModel(**product.model_dump(), seller_id=current_seller.id)
     db.add(db_product)
     await db.commit()
     await db.refresh(db_product)
     return db_product
 
 
-async def update_and_get_product(product_id: int, product: ProductCreate, db: AsyncSession):
-    db_product = await get_product_by_id(product_id, db)
-    await check_category(db_product.category_id, db)
+async def update_and_get_product(db_product,
+                                 product: ProductCreate,
+                                 db: AsyncSession):
     await db.execute(update(ProductModel)
-               .where(ProductModel.id == product_id)
+               .where(ProductModel.id == db_product.id)
                .values(**product.model_dump())
                )
-
     await db.commit()
     await db.refresh(db_product)
     return db_product
 
 
-async def delete_product_by_id(product_id: int, db: AsyncSession):
-    await get_product_by_id(product_id, db)
+async def check_product_seller(product, current_seller: UserModel):
+    """does current seller own product"""
+    if product.seller_id != current_seller.id:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN,
+                            detail="You can only update your own products")
+
+
+async def delete_and_get_product(db_product, db: AsyncSession):
     await db.execute(update(ProductModel)
-               .where(ProductModel.id == product_id,
+               .where(ProductModel.id == db_product.id,
                       ProductModel.is_active == True)
                .values(is_active=False)
                )
     await db.commit()
+    await db.refresh(db_product)
+    return db_product
 
 
 #CATEGORY OPERATIONS
@@ -170,3 +179,35 @@ async def authenticate_user(form_data: OAuth2PasswordRequestForm,
         })
 
     return access_token
+
+
+async def update_role_by_email(email: str, new_role: str, db: AsyncSession):
+    stmt = select(UserModel).where(UserModel.email == email,
+                                   UserModel.is_active == True)
+    db_user = (await db.scalars(stmt)).first()
+    if db_user is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
+                            detail="Email not found")
+    await db.execute(update(UserModel)
+                     .where(UserModel.email == email)
+                     .values(role=new_role)
+                     )
+    await db.commit()
+    await db.refresh(db_user)
+    return db_user
+
+
+async def update_role_by_id(user_id: int, new_role: str, db: AsyncSession):
+    stmt = select(UserModel).where(UserModel.id == user_id,
+                                   UserModel.is_active == True)
+    db_user = (await db.scalars(stmt)).first()
+    if db_user is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
+                            detail="User ID not found")
+    await db.execute(update(UserModel)
+                     .where(UserModel.id == user_id)
+                     .values(role=new_role)
+                     )
+    await db.commit()
+    await db.refresh(db_user)
+    return db_user

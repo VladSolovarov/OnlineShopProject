@@ -20,8 +20,8 @@ class Product(Base):
     image_url: Mapped[str | None] = mapped_column(String(200), nullable=True)
     stock: Mapped[int] = mapped_column(nullable=False)
     is_active: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
-    category_id: Mapped[int] = mapped_column(ForeignKey('categories.id'), nullable=False)
-    seller_id: Mapped[int] = mapped_column(ForeignKey('users.id'), nullable=False)
+    category_id: Mapped[int] = mapped_column(ForeignKey('categories.id'), nullable=False, index=True)
+    seller_id: Mapped[int] = mapped_column(ForeignKey('users.id'), nullable=False, index=True)
 
     category: Mapped["Category"] = relationship(
         'Category',

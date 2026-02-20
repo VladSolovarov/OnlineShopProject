@@ -3,13 +3,15 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from sqlalchemy import select, update
 
-
+from app.auth import get_current_seller
 from app.schemas import Product as ProductSchema, ProductCreate
 from app.models.categories import Category as CategoryModel
 from app.models.products import Product as ProductModel
+from app.models.users import User as UserModel
+
 
 from app.routers.db_operations import get_products_from_db, check_category, get_product_by_id, create_and_get_product, \
-    update_and_get_product, delete_product_by_id
+    update_and_get_product, check_product_seller, delete_and_get_product
 
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.db_depends import get_async_db
@@ -27,10 +29,12 @@ async def get_all_products(db: AsyncSession = Depends(get_async_db)):
 
 
 @router.post("/", response_model=ProductSchema, status_code=201)
-async def create_product(product: ProductCreate, db: AsyncSession = Depends(get_async_db)):
-    """Create a new product"""
+async def create_product(product: ProductCreate,
+                         db: AsyncSession = Depends(get_async_db),
+                         current_seller: UserModel = Depends(get_current_seller)):
+    """Create a new product for current 'seller'"""
     await check_category(product.category_id, db)
-    return await create_and_get_product(product, db)
+    return await create_and_get_product(product, db, current_seller)
 
 
 @router.get("/category/{category_id}", response_model=list[ProductSchema], status_code=200)
@@ -50,16 +54,23 @@ async def get_product(product_id: int, db: AsyncSession = Depends(get_async_db))
 
 
 @router.put("/{product_id}", response_model=ProductSchema, status_code=200)
-async def update_product(product_id: int, product: ProductCreate, db: AsyncSession = Depends(get_async_db)):
-    """Update product by id"""
+async def update_product(product_id: int,
+                         product: ProductCreate,
+                         db: AsyncSession = Depends(get_async_db),
+                         current_seller: UserModel = Depends(get_current_seller)):
+    """Update product by id for current seller"""
     db_product = await get_product_by_id(product_id, db)
     await check_category(db_product.category_id, db)
-    return await update_and_get_product(product_id, product, db)
+    await check_product_seller(db_product, current_seller)
+    return await update_and_get_product(db_product, product, db)
 
 
 @router.delete("/{product_id}", status_code=200)
-async def delete_product(product_id: int, db: AsyncSession = Depends(get_async_db)):
-    """Set is_active=False of Product by id"""
-    await delete_product_by_id(product_id, db)
-    return {"status": "success", "message": "Product marked as inactive"}
+async def delete_product(product_id: int,
+                         db: AsyncSession = Depends(get_async_db),
+                         current_seller: UserModel = Depends(get_current_seller)):
+    """Set is_active=False of current seller's Product by id"""
+    db_product = await get_product_by_id(product_id, db)
+    await check_product_seller(db_product, current_seller)
+    return await delete_and_get_product(db_product, db)
 

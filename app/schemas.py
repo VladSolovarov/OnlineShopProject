@@ -146,8 +146,19 @@ class User(BaseModel):
     is_active: Annotated[bool, Field(
         description="Is user active"
     )]
+
     role: Annotated[str, Field(
         description="What role does user have"
+    )]
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class UserRoleUpdate(BaseModel):
+    """Update user role """
+    new_role: Annotated[str, Field(
+        pattern=r"^(seller|buyer|admin)$",
+        description="New user role"
     )]
 
     model_config = ConfigDict(from_attributes=True)
