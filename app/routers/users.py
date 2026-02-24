@@ -7,8 +7,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.auth import get_current_admin, create_refresh_token, create_access_token
 from app.config import get_secret_key, ALGORITHM
-from app.routers.db_operations import check_new_email, create_and_get_user, authenticate_user, update_role_by_id, \
-    get_user_by_email, get_id_by_refresh_token, get_user_by_id
+from app.routers.operations.users_operations import check_new_email, get_user_by_id, \
+    authenticate_user, create_and_get_user, update_role_by_id, get_id_by_refresh_token
 from app.models import User as UserModel
 from app.schemas import UserCreate, User as UserSchema, UserRoleUpdate, RefreshTokenRequest
 from app.db_depends import get_async_db

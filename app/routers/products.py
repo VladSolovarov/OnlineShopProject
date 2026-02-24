@@ -9,9 +9,9 @@ from app.models.categories import Category as CategoryModel
 from app.models.products import Product as ProductModel
 from app.models.users import User as UserModel
 
-
-from app.routers.db_operations import get_products_from_db, check_category, get_product_by_id, create_and_get_product, \
+from app.routers.operations.products_operations import get_products_from_db, get_product_by_id, create_and_get_product, \
     update_and_get_product, check_product_seller, delete_and_get_product
+from app.routers.operations.categories_operations import check_category
 
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.db_depends import get_async_db
