@@ -1,8 +1,10 @@
+import jwt
 from fastapi import HTTPException, status
 from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy import select, update
 
-from app.auth import hash_password, verify_password, create_access_token
+from app.auth import hash_password, verify_password, create_access_token, create_refresh_token
+from app.config import get_secret_key, ALGORITHM
 from app.models.categories import Category as CategoryModel
 from app.models.products import Product as ProductModel
 from app.models.users import User as UserModel
@@ -13,6 +15,9 @@ from app.schemas import (CategoryCreate,
 from sqlalchemy.ext.asyncio import AsyncSession
 
 
+credentials_exception = HTTPException(status_code=401,
+                                            detail="Could not validate refresh token",
+                                            headers={"WWW-Authenticate": "Bearer"})
 #PRODUCT OPERATIONS
 async def get_products_from_db(db: AsyncSession, category_id: int | None = None):
     if category_id is not None:
@@ -141,22 +146,32 @@ async def delete_category_by_id(category_id: int, db: AsyncSession):
 
 
 #USER OPERATIONS
-async def check_email(user: UserCreate, db: AsyncSession):
-    stmt = select(UserModel).where(UserModel.email == user.email)
+async def check_new_email(email, db: AsyncSession):
+    stmt = select(UserModel).where(UserModel.email == email)
     result = (await db.scalars(stmt)).first()
     if result is not None:
         raise HTTPException(status_code=status.HTTP_409_CONFLICT,
                             detail="Email is already registered")
 
+async def get_user_by_id(user_id, db: AsyncSession):
+    user_stmt = select(UserModel).where(UserModel.id == user_id,
+                                        UserModel.is_active == True)
+    db_user = (await db.scalars(user_stmt)).first()
+    if db_user is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
+                            detail="User not found")
+    return db_user
 
-async def create_and_get_user(user: UserCreate, db: AsyncSession):
-    db_user = UserModel(email=user.email,
-                        hashed_password=hash_password(user.password.get_secret_value()),
-                        role=user.role)
 
-    db.add(db_user)
-    await db.commit()
-    await db.refresh(db_user)
+
+async def get_user_by_email(email, db: AsyncSession):
+    user_stmt = select(UserModel).where(UserModel.email == email,
+                                        UserModel.is_active == True)
+    db_user = (await db.scalars(user_stmt)).first()
+
+    if db_user is None:
+        raise credentials_exception
+
     return db_user
 
 
@@ -171,14 +186,19 @@ async def authenticate_user(form_data: OAuth2PasswordRequestForm,
             detail="Incorrect email or password",
             headers={"WWW-Authenticate": "Bearer"}
         )
-    access_token = create_access_token(
-        data={
-        "sub": db_user.email,
-        "role": db_user.role,
-        "id": db_user.id
-        })
 
-    return access_token
+    return db_user
+
+
+async def create_and_get_user(user: UserCreate, db: AsyncSession):
+    db_user = UserModel(email=user.email,
+                        hashed_password=hash_password(user.password.get_secret_value()),
+                        role=user.role)
+
+    db.add(db_user)
+    await db.commit()
+    await db.refresh(db_user)
+    return db_user
 
 
 async def update_role_by_email(email: str, new_role: str, db: AsyncSession):
@@ -211,3 +231,18 @@ async def update_role_by_id(user_id: int, new_role: str, db: AsyncSession):
     await db.commit()
     await db.refresh(db_user)
     return db_user
+
+
+def get_id_by_refresh_token(refresh_token) -> int:
+    """Check refresh token and return user_id"""
+    try:
+        payload = jwt.decode(refresh_token, get_secret_key(), algorithms=[ALGORITHM])
+        user_id: str | None = payload.get("id")
+        token_type: str | None = payload.get("token_type")
+        if user_id is None or token_type != "refresh":
+            raise credentials_exception
+    except jwt.ExpiredSignatureError:
+        raise credentials_exception # Time expired
+    except jwt.PyJWTError:
+        raise credentials_exception # Something wrong with the token
+    return int(user_id)

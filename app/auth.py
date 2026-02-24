@@ -8,14 +8,17 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from starlette.status import HTTP_401_UNAUTHORIZED
 
+from app.schemas import User as UserSchema
 from app.db_depends import get_async_db
 from app.models.users import User as UserModel
 from app.config import get_secret_key, ALGORITHM
 
-
 pwd_context = CryptContext(schemes=['bcrypt'], deprecated='auto')
 
 ACCESS_TOKEN_EXPIRE_MINUTES = 30
+REFRESH_TOKEN_EXPIRE_DAYS = 7
+ACCESS_TOKEN_TYPE = "access"
+REFRESH_TOKEN_TYPE = "refresh"
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="users/token")
 
 
@@ -29,17 +32,37 @@ def verify_password(plain_password: str, hashed_password: str) -> bool:
     return pwd_context.verify(plain_password, hashed_password)
 
 
-def create_access_token(data: dict):
-    """Create JWT token with Payload (sub, role, id, exp)"""
-    to_encode = data.copy()
-    expire = datetime.now(timezone.utc) + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
-    to_encode.update({"exp": expire})
+def create_jwt(token_data: dict, token_type: str):
+    """Create access or refresh token"""
+    to_encode = token_data.copy()
+    expire_timedelta = (timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
+                if token_type == ACCESS_TOKEN_TYPE else
+                timedelta(days=REFRESH_TOKEN_EXPIRE_DAYS))
+
+    issued_at = datetime.now(timezone.utc)
+    to_encode.update({
+        "iat": issued_at,
+        "exp": issued_at + expire_timedelta,
+        "token_type": token_type
+    })
     return jwt.encode(to_encode, get_secret_key(), algorithm=ALGORITHM)
+
+
+def create_access_token(user: UserSchema):
+    """Create access JWT with Payload (sub, role, id, exp, token_type)"""
+    data = {"sub": user.email, "role": user.role, "id": user.id}
+    return create_jwt(data, token_type=ACCESS_TOKEN_TYPE)
+
+
+def create_refresh_token(user: UserSchema):
+    """Create refresh JWT with Payload (sub, role, id, exp, token_type)"""
+    data = {"id": user.id}
+    return create_jwt(data, token_type=REFRESH_TOKEN_TYPE)
 
 
 async def get_current_user(token: str = Depends(oauth2_scheme),
                            db: AsyncSession = Depends(get_async_db)):
-    """Check token and return user from db"""
+    """Check token and returned user from db"""
     credentials_exception = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
         detail="Could not validate credentials",

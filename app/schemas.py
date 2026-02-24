@@ -124,7 +124,7 @@ class UserCreate(BaseModel):
 
     password: Annotated[SecretStr, Field(
         min_length=8,
-        description="Password (At least 8 symbols)"
+        description="Password (At least 8 sym)"
     )]
 
     role: Annotated[str, Field(
@@ -155,10 +155,16 @@ class User(BaseModel):
 
 
 class UserRoleUpdate(BaseModel):
-    """Update user role """
+    """Update user role"""
     new_role: Annotated[str, Field(
         pattern=r"^(seller|buyer|admin)$",
         description="New user role"
     )]
 
     model_config = ConfigDict(from_attributes=True)
+
+
+class RefreshTokenRequest(BaseModel):
+    refresh_token: str
+
+
