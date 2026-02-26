@@ -19,6 +19,7 @@ ACCESS_TOKEN_EXPIRE_MINUTES = 30
 REFRESH_TOKEN_EXPIRE_DAYS = 7
 ACCESS_TOKEN_TYPE = "access"
 REFRESH_TOKEN_TYPE = "refresh"
+ADMIN_ROLE, SELLER_ROLE, BUYER_ROLE = 'admin', 'seller', 'buyer'
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="users/token")
 
 
@@ -90,17 +91,24 @@ async def get_current_user(token: str = Depends(oauth2_scheme),
     return db_user
 
 
+def check_role(user, chosen_role):
+    if user.role != chosen_role:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN,
+                            detail=f"Only {chosen_role}s can perform this action")
+
+
 async def get_current_seller(current_user: UserModel = Depends(get_current_user)):
     """Validate current user role is 'seller'"""
-    if current_user.role != 'seller':
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN,
-                            detail="Only sellers can perform this action")
+    check_role(current_user, SELLER_ROLE)
     return current_user
 
 
 async def get_current_admin(current_user: UserModel = Depends(get_current_user)):
     """Validate current user role is 'admin'"""
-    if current_user.role != 'admin':
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN,
-                            detail="Only admins can perform this action")
+    check_role(current_user, ADMIN_ROLE)
+    return current_user
+
+async def get_current_buyer(current_user: UserModel = Depends(get_current_user)):
+    """Validate current user role is 'buyer'"""
+    check_role(current_user, BUYER_ROLE)
     return current_user

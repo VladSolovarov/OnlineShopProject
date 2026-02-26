@@ -11,7 +11,7 @@ from app.models.users import User as UserModel
 
 from app.routers.operations.products_operations import get_products_from_db, get_product_by_id, create_and_get_product, \
     update_and_get_product, check_product_seller, delete_and_get_product
-from app.routers.operations.categories_operations import check_category
+from app.routers.operations.categories_operations import check_category_by_id
 
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.db_depends import get_async_db
@@ -33,14 +33,14 @@ async def create_product(product: ProductCreate,
                          db: AsyncSession = Depends(get_async_db),
                          current_seller: UserModel = Depends(get_current_seller)):
     """Create a new product for current 'seller'"""
-    await check_category(product.category_id, db)
+    await check_category_by_id(product.category_id, db)
     return await create_and_get_product(product, db, current_seller)
 
 
 @router.get("/category/{category_id}", response_model=list[ProductSchema], status_code=200)
 async def get_products_by_category(category_id: int, db: AsyncSession = Depends(get_async_db)):
     """Get all products from category by category_id"""
-    await check_category(category_id, db)
+    await check_category_by_id(category_id, db)
     products = await get_products_from_db(db, category_id)
     return products
 
@@ -49,7 +49,7 @@ async def get_products_by_category(category_id: int, db: AsyncSession = Depends(
 async def get_product(product_id: int, db: AsyncSession = Depends(get_async_db)):
     """Get details of product by id"""
     db_product = await get_product_by_id(product_id, db)
-    await check_category(db_product.category_id, db)
+    await check_category_by_id(db_product.category_id, db)
     return db_product
 
 
@@ -60,7 +60,7 @@ async def update_product(product_id: int,
                          current_seller: UserModel = Depends(get_current_seller)):
     """Update product by id for current seller"""
     db_product = await get_product_by_id(product_id, db)
-    await check_category(db_product.category_id, db)
+    await check_category_by_id(db_product.category_id, db)
     await check_product_seller(db_product, current_seller)
     return await update_and_get_product(db_product, product, db)
 

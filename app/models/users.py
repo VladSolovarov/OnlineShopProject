@@ -1,4 +1,4 @@
-from sqlalchemy import Boolean, Integer, String
+from sqlalchemy import Boolean, Integer, String, ForeignKey
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.database import Base
@@ -17,4 +17,10 @@ class User(Base):
         'Product',
         uselist=True,
         back_populates='seller'
+    )
+
+    reviews: Mapped[list['Review']] = relationship(
+        'Review',
+        uselist=True,
+        back_populates='user',
     )

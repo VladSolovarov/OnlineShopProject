@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends
 
-from app.routers.operations.categories_operations import get_categories_from_db, check_category, \
-    create_and_get_category, update_and_get_category, delete_category_by_id
+from app.routers.operations.categories_operations import get_categories_from_db, check_category_by_id, \
+    create_and_get_category, update_and_get_category, delete_and_get_category, get_category_by_id
 from app.schemas import CategoryCreate, Category as CategorySchema
 from app.models.users import User as UserModel
 
@@ -26,7 +26,7 @@ async def create_category(category: CategoryCreate,
                           current_admin: UserModel = Depends(get_current_admin)):
     """Create a new category"""
     if category.parent_id is not None:
-        await check_category(category.parent_id, db)
+        await check_category_by_id(category.parent_id, db)
     return await create_and_get_category(category, db)
 
 
@@ -44,5 +44,5 @@ async def delete_category(category_id: int,
                           db: AsyncSession = Depends(get_async_db),
                           current_admin: UserModel = Depends(get_current_admin)):
     """Set is_active=False of Category by id"""
-    await delete_category_by_id(category_id, db)
-    return {"status": "success", "message": "Category marked as inactive"}
+    db_category = await get_category_by_id(category_id, db)
+    return await delete_and_get_category(db_category, db)

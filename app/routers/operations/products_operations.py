@@ -3,13 +3,13 @@ from sqlalchemy import select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models import Product as ProductModel, Category as CategoryModel, User as UserModel
-from app.routers.operations.categories_operations import check_category
+from app.routers.operations.categories_operations import check_category_by_id
 from app.schemas import ProductCreate
 
 
 async def get_products_from_db(db: AsyncSession, category_id: int | None = None):
     if category_id is not None:
-        await check_category(category_id, db)
+        await check_category_by_id(category_id, db)
         stmt = select(ProductModel).where(ProductModel.category_id == category_id,
                                           ProductModel.is_active == True)
     else:
@@ -70,3 +70,6 @@ async def delete_and_get_product(db_product, db: AsyncSession):
     await db.commit()
     await db.refresh(db_product)
     return db_product
+
+
+

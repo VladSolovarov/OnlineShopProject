@@ -1,6 +1,7 @@
 from decimal import Decimal
 from typing import Annotated
 from pydantic import BaseModel, Field, ConfigDict, EmailStr, SecretStr
+from datetime import datetime
 
 
 class CategoryCreate(BaseModel):
@@ -110,7 +111,14 @@ class Product(BaseModel):
     )]
 
     is_active: Annotated[bool, Field(
-        description="Is active product"
+        description="Is the active status of product"
+    )]
+
+    rating: Annotated[Decimal, Field(
+        gt=0,
+        le=5,
+        decimal_places=2,
+        description="Product rating from reviews"
     )]
 
     model_config = ConfigDict(from_attributes=True)
@@ -124,7 +132,7 @@ class UserCreate(BaseModel):
 
     password: Annotated[SecretStr, Field(
         min_length=8,
-        description="Password (At least 8 sym)"
+        description="Password (At least 8 symbols)"
     )]
 
     role: Annotated[str, Field(
@@ -144,7 +152,7 @@ class User(BaseModel):
     )]
 
     is_active: Annotated[bool, Field(
-        description="Is user active"
+        description="Is the active status of user"
     )]
 
     role: Annotated[str, Field(
@@ -168,3 +176,53 @@ class RefreshTokenRequest(BaseModel):
     refresh_token: str
 
 
+class Review(BaseModel):
+    id: Annotated[int, Field(
+        description="Unique review ID"
+    )]
+
+    user_id: Annotated[int, Field(
+        description="User ID of review"
+    )]
+
+    product_id: Annotated[int, Field(
+        description="Product ID of review"
+    )]
+
+    comment: Annotated[str | None, Field(
+        max_length=1000,
+        default=None,
+        description="Review text",
+    )]
+
+    comment_date: Annotated[datetime, Field(
+        description="Review datetime"
+    )]
+
+    grade: Annotated[int, Field(
+        gt=0,
+        le=5,
+        description="Review grade"
+    )]
+
+    is_active: Annotated[bool, Field(
+        description="Is the active status of review"
+    )]
+
+
+class ReviewCreate(BaseModel):
+    product_id: Annotated[int, Field(
+        description="Product id of this review"
+    )]
+
+    comment: Annotated[str | None, Field(
+        default=None,
+        description="Review text (up to 1000 symbols)"
+    )]
+
+
+    grade: Annotated[int, Field(
+        gt=0,
+        le=5,
+        description="Review grade (from 1 to 5)"
+    )]

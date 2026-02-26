@@ -23,7 +23,7 @@ async def get_category_by_id(category_id, db: AsyncSession):
     return db_category
 
 
-async def check_category(category_id: int, db: AsyncSession) -> None:
+async def check_category_by_id(category_id: int, db: AsyncSession) -> None:
     stmt = select(CategoryModel).where(CategoryModel.id == category_id,
                                                 CategoryModel.is_active == True)
     result = await db.scalars(stmt)
@@ -44,7 +44,7 @@ async def create_and_get_category(category: CategoryCreate, db: AsyncSession):
 async def update_and_get_category(category_id: int, category: CategoryCreate, db: AsyncSession):
     db_category = await get_category_by_id(category_id, db)
     if category.parent_id is not None:
-        await check_category(category.parent_id, db)
+        await check_category_by_id(category.parent_id, db)
 
     await db.execute(update(CategoryModel)
                .where(CategoryModel.id == category_id)
@@ -56,11 +56,12 @@ async def update_and_get_category(category_id: int, category: CategoryCreate, db
     return db_category
 
 
-async def delete_category_by_id(category_id: int, db: AsyncSession):
-    await get_category_by_id(category_id, db)
+async def delete_and_get_category(db_category: CategoryModel, db: AsyncSession):
     await db.execute(update(CategoryModel)
-               .where(CategoryModel.id == category_id,
+               .where(CategoryModel.id == db_category.id,
                       CategoryModel.is_active == True)
                .values(is_active=False)
                )
     await db.commit()
+    await db.refresh(db_category)
+    return db_category
