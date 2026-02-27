@@ -1,12 +1,7 @@
-from fastapi import APIRouter, Depends, HTTPException
-
-from sqlalchemy.orm import Session
-from sqlalchemy import select, update
+from fastapi import APIRouter, Depends
 
 from app.auth import get_current_seller
 from app.schemas import Product as ProductSchema, ProductCreate
-from app.models.categories import Category as CategoryModel
-from app.models.products import Product as ProductModel
 from app.models.users import User as UserModel
 
 from app.routers.operations.products_operations import get_products_from_db, get_product_by_id, create_and_get_product, \

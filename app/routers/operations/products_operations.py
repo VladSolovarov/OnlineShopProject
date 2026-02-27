@@ -8,24 +8,23 @@ from app.schemas import ProductCreate
 
 
 async def get_products_from_db(db: AsyncSession, category_id: int | None = None):
+    """get all products or get products of category by ID"""
     if category_id is not None:
         await check_category_by_id(category_id, db)
-        stmt = select(ProductModel).where(ProductModel.category_id == category_id,
+        products_stmt = select(ProductModel).where(ProductModel.category_id == category_id,
                                           ProductModel.is_active == True)
     else:
-        stmt = select(ProductModel).join(CategoryModel).where(ProductModel.is_active == True,
+        products_stmt = select(ProductModel).join(CategoryModel).where(ProductModel.is_active == True,
                                                               CategoryModel.is_active == True,
                                                               ProductModel.stock > 0)
-    result = await db.scalars(stmt)
-    products = result.all()
+    products = (await db.scalars(products_stmt)).all()
     return products
 
 
 async def get_product_by_id(product_id: int, db: AsyncSession):
-    stmt = select(ProductModel).where(ProductModel.id == product_id,
+    products_stmt = select(ProductModel).where(ProductModel.id == product_id,
                                       ProductModel.is_active == True)
-    result = await db.scalars(stmt)
-    db_product = result.first()
+    db_product = (await db.scalars(products_stmt)).first()
     if db_product is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
                       detail='Product not found or inactive')

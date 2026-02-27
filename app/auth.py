@@ -1,6 +1,5 @@
 from fastapi.security import OAuth2PasswordBearer
 from passlib.context import CryptContext
-from sqlalchemy.util import deprecated
 from datetime import datetime, timedelta, timezone
 import jwt
 from fastapi import Depends, HTTPException, status

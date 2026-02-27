@@ -3,8 +3,6 @@ from typing import Annotated
 from pydantic import BaseModel, Field, ConfigDict, EmailStr, SecretStr
 from datetime import datetime
 
-from sqlalchemy import Float
-
 
 class CategoryCreate(BaseModel):
     """Uses to create and update categories. (PUT, POST)"""

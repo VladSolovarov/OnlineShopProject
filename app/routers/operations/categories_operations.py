@@ -7,16 +7,15 @@ from app.schemas import CategoryCreate
 
 
 async def get_categories_from_db(db: AsyncSession):
-    stmt = select(CategoryModel).where(CategoryModel.is_active == True)
-    result = await db.scalars(stmt)
-    return result.all()
+    categories_stmt = select(CategoryModel).where(CategoryModel.is_active == True)
+    categories = (await db.scalars(categories_stmt)).all()
+    return categories
 
 
 async def get_category_by_id(category_id, db: AsyncSession):
-    stmt = select(CategoryModel).where(CategoryModel.id == category_id,
+    categories_stmt = select(CategoryModel).where(CategoryModel.id == category_id,
                                        CategoryModel.is_active == True)
-    result = await db.scalars(stmt)
-    db_category = result.first()
+    db_category = (await db.scalars(categories_stmt)).first()
     if db_category is None:
         raise HTTPException(status_code=404,
                             detail="Category not found or inactive")
@@ -24,10 +23,9 @@ async def get_category_by_id(category_id, db: AsyncSession):
 
 
 async def check_category_by_id(category_id: int, db: AsyncSession) -> None:
-    stmt = select(CategoryModel).where(CategoryModel.id == category_id,
+    categories_stmt = select(CategoryModel).where(CategoryModel.id == category_id,
                                                 CategoryModel.is_active == True)
-    result = await db.scalars(stmt)
-    db_category = result.first()
+    db_category = (await db.scalars(categories_stmt)).first()
     if db_category is None:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST,
                             detail='Category not found or inactive')

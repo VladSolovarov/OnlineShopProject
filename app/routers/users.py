@@ -1,14 +1,10 @@
-import jwt
-from fastapi import HTTPException
-
 from fastapi import APIRouter, Depends, status
 from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.auth import get_current_admin, create_refresh_token, create_access_token
-from app.config import get_secret_key, ALGORITHM
 from app.routers.operations.users_operations import check_new_email, get_user_by_id, \
-    authenticate_user, create_and_get_user, update_role_by_id, get_id_by_refresh_token
+    authenticate_user, create_and_get_user, update_role_by_id_and_get_user, get_id_by_refresh_token
 from app.models import User as UserModel
 from app.schemas import UserCreate, User as UserSchema, UserRoleUpdate, RefreshTokenRequest
 from app.db_depends import get_async_db
@@ -59,7 +55,8 @@ async def tokens_by_refresh_token(body: RefreshTokenRequest, db: AsyncSession = 
 
 @router.get('/{user_id}', response_model=UserSchema)
 async def get_user(user_id: int, db: AsyncSession = Depends(get_async_db)):
-    return await get_user_by_id(user_id, db)
+    db_user = await get_user_by_id(user_id, db)
+    return db_user
 
 
 @router.put('/{user_id}/update_role', response_model=UserSchema)
@@ -67,5 +64,5 @@ async def update_role(user_id: int,
                       update: UserRoleUpdate,
                       db: AsyncSession = Depends(get_async_db),
                       current_admin: UserModel = Depends(get_current_admin)):
-    db_user = await update_role_by_id(user_id, update.new_role, db)
+    db_user = await update_role_by_id_and_get_user(user_id, update.new_role, db)
     return db_user
