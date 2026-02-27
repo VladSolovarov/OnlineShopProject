@@ -9,12 +9,11 @@ class Review(Base):
     __tablename__ = 'reviews'
 
     id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True, index=True)
-    user_id: Mapped[int] = mapped_column(ForeignKey('users.id'), unique=True, nullable=False, index=True)
+    user_id: Mapped[int] = mapped_column(ForeignKey('users.id'), nullable=False, index=True)
     product_id: Mapped[int] = mapped_column(ForeignKey('products.id'), nullable=False, index=True)
-
     comment: Mapped[str | None] = mapped_column(String(1000), default=None, nullable=True)
-    comment_date: Mapped[datetime] = mapped_column(DateTime, default_factory=datetime.now, nullable=False)
-    grade: Mapped[int] = mapped_column(Integer, gt=0, le=5, nullable=False)
+    comment_date: Mapped[datetime] = mapped_column(DateTime, default=datetime.now, nullable=False)
+    grade: Mapped[int] = mapped_column(Integer, nullable=False)
     is_active: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
 
     user: Mapped["User"] = relationship(

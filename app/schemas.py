@@ -3,6 +3,8 @@ from typing import Annotated
 from pydantic import BaseModel, Field, ConfigDict, EmailStr, SecretStr
 from datetime import datetime
 
+from sqlalchemy import Float
+
 
 class CategoryCreate(BaseModel):
     """Uses to create and update categories. (PUT, POST)"""
@@ -115,7 +117,8 @@ class Product(BaseModel):
     )]
 
     rating: Annotated[Decimal, Field(
-        gt=0,
+        default=Decimal('0.00'),
+        ge=0,
         le=5,
         decimal_places=2,
         description="Product rating from reviews"
@@ -196,11 +199,12 @@ class Review(BaseModel):
     )]
 
     comment_date: Annotated[datetime, Field(
+        default_factory=datetime.now,
         description="Review datetime"
     )]
 
     grade: Annotated[int, Field(
-        gt=0,
+        ge=1,
         le=5,
         description="Review grade"
     )]
@@ -222,7 +226,7 @@ class ReviewCreate(BaseModel):
 
 
     grade: Annotated[int, Field(
-        gt=0,
+        ge=1,
         le=5,
         description="Review grade (from 1 to 5)"
     )]

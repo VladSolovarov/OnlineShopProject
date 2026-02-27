@@ -11,7 +11,7 @@ from app.db_depends import get_async_db
 from sqlalchemy import select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
-router = APIRouter()
+router = APIRouter(tags=['reviews'])
 
 
 @router.get('/reviews', response_model=list[ReviewSchema])
@@ -37,7 +37,9 @@ async def create_review(review: ReviewCreate,
 
 
 @router.delete('/reviews/{review_id}', response_model=ReviewSchema)
-async def delete_review(review_id: int, db: AsyncSession, current_user=Depends(get_current_user)):
+async def delete_review(review_id: int,
+                        db: AsyncSession = Depends(get_async_db),
+                        current_user=Depends(get_current_user)):
     db_review = await get_review_by_id(review_id, db)
     await check_admin_or_author(db, current_user)
     return await delete_and_get_review(db_review, db)

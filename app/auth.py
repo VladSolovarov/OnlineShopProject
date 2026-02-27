@@ -108,6 +108,7 @@ async def get_current_admin(current_user: UserModel = Depends(get_current_user))
     check_role(current_user, ADMIN_ROLE)
     return current_user
 
+
 async def get_current_buyer(current_user: UserModel = Depends(get_current_user)):
     """Validate current user role is 'buyer'"""
     check_role(current_user, BUYER_ROLE)
