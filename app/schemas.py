@@ -222,9 +222,32 @@ class ReviewCreate(BaseModel):
         description="Review text (up to 1000 symbols)"
     )]
 
-
     grade: Annotated[int, Field(
         ge=1,
         le=5,
         description="Review grade (from 1 to 5)"
     )]
+
+
+class ProductList(BaseModel):
+    """Pagination list for products"""
+    items: Annotated[list[Product], Field(
+        description="Products for current page"
+    )]
+
+    total: Annotated[int, Field(
+        ge=0,
+        description="Amount of pages"
+    )]
+
+    page_size: Annotated[int, Field(
+        gt=0,
+        description="Amount of products per page"
+    )]
+
+    page: Annotated[int, Field(
+        gt=0,
+        description="Current page number"
+    )]
+
+    model_config = ConfigDict(from_attributes=True)

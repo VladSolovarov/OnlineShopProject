@@ -1,6 +1,7 @@
+from datetime import datetime
 from decimal import Decimal
 
-from sqlalchemy import String, Boolean, Numeric, CheckConstraint, ForeignKey, text
+from sqlalchemy import String, Boolean, Numeric, CheckConstraint, ForeignKey, text, DateTime, func
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.database import Base
@@ -22,7 +23,12 @@ class Product(Base):
     is_active: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
     category_id: Mapped[int] = mapped_column(ForeignKey('categories.id'), nullable=False, index=True)
     seller_id: Mapped[int] = mapped_column(ForeignKey('users.id'), nullable=False, index=True)
-    rating: Mapped[Decimal] = mapped_column(Numeric(3, 2), default=0.00, nullable=False)
+    rating: Mapped[Decimal] = mapped_column(Numeric(3, 2), default=0.00,
+                                            server_default=text('0'), nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True),
+                                                 server_default=func.now(), nullable=False)
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True),
+                                                 server_default=func.now(), onupdate=func.now(), nullable=False)
 
     category: Mapped["Category"] = relationship(
         'Category',
