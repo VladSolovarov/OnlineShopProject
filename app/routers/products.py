@@ -28,32 +28,26 @@ router = APIRouter(
 async def get_all_products(
         page: int = Query(default=1, gt=0),
         page_size: int = Query(default=20, gt=0, le=100),
+        search: str | None = Query(
+            default=None, description="Text to search products"),
         category_id: int | None = Query(
             default=None, description="Category ID for filtering"),
         min_price: int | None = Query(
-            default=None, description="Min products price"),
+            default=None, ge=0, description="Min products price"),
         max_price: int | None = Query(
-            default=None, description="Max products price"),
+            default=None, gt=0, description="Max products price"),
         in_stock: bool | None = Query(
             default=None, description="Show products in stock or skip"),
         seller_id: int | None = Query(
             default=None, description="Seller ID for filtering"),
         sort_by: ProductSortField = Query(
-            default=ProductSortField.ID, description="Use sorting by date, price or rating"
-        ),
+            default=ProductSortField.ID, description="Use sorting by date, price or rating"),
         sorting_order: SortOrder = Query(
-            default=SortOrder.ASC, description="Sorting order by ascending or descending (asc, desc)"
-        ),
+            default=SortOrder.ASC, description="Sorting order by ascending or descending (asc, desc)"),
         db: AsyncSession = Depends(get_async_db)
 ):
-    if min_price is not None and max_price is not None and min_price > max_price:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="min_price cannot be greater than max_price",
-        )
-
     filters = category_id, min_price, max_price, in_stock, seller_id
-    return await get_products_from_db(db, page, page_size, filters, sort_by, sorting_order)
+    return await get_products_from_db(db, page, page_size, search, filters, sort_by, sorting_order)
 
 
 @router.post("/", response_model=ProductSchema, status_code=201)
