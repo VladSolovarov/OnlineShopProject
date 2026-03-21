@@ -14,6 +14,7 @@ router = APIRouter(
     tags=['categories']
 )
 
+
 @router.get('/', response_model=list[CategorySchema], status_code=200)
 async def get_all_categories(db: AsyncSession = Depends(get_async_db)):
     """Get a list of all categories"""

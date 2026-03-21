@@ -63,6 +63,14 @@ class Product(Base):
         uselist=True
     )
 
+    cart_items: Mapped[list['CartItem']] = relationship(
+        'CartItem',
+        back_populates='product',
+        uselist=True,
+        cascade='all, delete-orphan',
+        passive_deletes=True
+    )
+
     __table_args__ = (
         Index('ix_products_tsv_gin','tsv', postgresql_using='gin'),
     )

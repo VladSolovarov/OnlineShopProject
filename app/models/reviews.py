@@ -1,5 +1,5 @@
 from datetime import datetime
-from sqlalchemy import String, ForeignKey, DateTime, Integer, Boolean, UniqueConstraint
+from sqlalchemy import String, ForeignKey, DateTime, Boolean, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.database import Base
@@ -12,8 +12,8 @@ class Review(Base):
     user_id: Mapped[int] = mapped_column(ForeignKey('users.id'), nullable=False, index=True)
     product_id: Mapped[int] = mapped_column(ForeignKey('products.id'), nullable=False, index=True)
     comment: Mapped[str | None] = mapped_column(String(1000), default=None, nullable=True)
-    comment_date: Mapped[datetime] = mapped_column(DateTime, default=datetime.now, nullable=False)
-    grade: Mapped[int] = mapped_column(Integer, nullable=False)
+    comment_date: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=datetime.now, nullable=False)
+    grade: Mapped[int] = mapped_column(nullable=False)
     is_active: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
 
     user: Mapped["User"] = relationship(
