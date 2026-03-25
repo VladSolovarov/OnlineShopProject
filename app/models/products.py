@@ -14,7 +14,8 @@ class Product(Base):
     __tablename__ = 'products'
     __table_args__ = (
         CheckConstraint('stock >= 0', name='check_stock_positive'),
-        CheckConstraint('price >= 0', name='check_price_positive')
+        CheckConstraint('price >= 0', name='check_price_positive'),
+        Index('ix_products_tsv_gin', 'tsv', postgresql_using='gin'),
     )
 
     id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
@@ -71,6 +72,8 @@ class Product(Base):
         passive_deletes=True
     )
 
-    __table_args__ = (
-        Index('ix_products_tsv_gin','tsv', postgresql_using='gin'),
+    order_items: Mapped[list['OrderItem']] = relationship(
+        'OrderItem',
+        uselist=True,
+        back_populates='product'
     )

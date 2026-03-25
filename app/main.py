@@ -1,5 +1,5 @@
 from fastapi import FastAPI
-from app.routers import categories, products, users, reviews, carts
+from app.routers import categories, products, users, reviews, carts, orders
 
 app = FastAPI(
     title='Проект: Онлайн-магазин',
@@ -11,6 +11,8 @@ app.include_router(products.router)
 app.include_router(users.router)
 app.include_router(reviews.router)
 app.include_router(carts.router)
+app.include_router(orders.router)
+
 
 @app.get('/')
 async def root():
