@@ -13,7 +13,7 @@ router = APIRouter(tags=['reviews'])
 
 
 @router.get('/reviews', response_model=list[ReviewSchema])
-async def get_reviews(db: AsyncSession = Depends(get_async_db)):
+async def get_all_reviews(db: AsyncSession = Depends(get_async_db)):
     """get all reviews"""
     reviews = await get_reviews_from_db(db)
     return reviews

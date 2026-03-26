@@ -1,4 +1,8 @@
-from fastapi import HTTPException, status
+from pathlib import Path
+from fastapi import (
+    HTTPException, status, HTTPException,
+    status, UploadFile, File, Form
+)
 from sqlalchemy import select, update, func, and_, asc, desc, or_
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -7,6 +11,16 @@ from app.routers.operations.categories_operations import check_category_by_id
 from app.schemas import ProductCreate
 
 from enum import Enum
+from pathlib import Path
+import uuid
+
+
+BASE_DIR = Path(__file__).resolve().parent.parent.parent.parent
+MEDIA_ROOT = BASE_DIR / "media" / "products"
+MEDIA_ROOT.mkdir(parents=True, exist_ok=True)
+ALLOWED_TYPES = {'image/jpeg', 'image/png', 'image/webp'}
+MAX_IMAGE_SIZE = 1024 * 1024 * 2
+
 
 class ProductSortField(str, Enum):
     ID = 'id'
@@ -19,6 +33,30 @@ class ProductSortField(str, Enum):
 class SortOrder(str, Enum):
     ASC = 'asc'
     DESC = 'desc'
+
+
+async def save_product_image(file: UploadFile) -> str:
+    if file.content_type not in ALLOWED_TYPES:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST,
+                            detail="Content type is not allowed (Must be JPG, PNG or WebP)")
+    content = await file.read()
+    if len(content) > MAX_IMAGE_SIZE:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST,
+                            detail="Image size is too large")
+    extension = Path(file.filename or '').suffix.lower() or '.jpg'
+    file_name = f"{uuid.uuid4()}{extension}"
+    file_path = MEDIA_ROOT / file_name
+    file_path.write_bytes(content)
+    return f"/media/products/{file_name}"
+
+
+def remove_product_image(url: str | None) -> None:
+    if not url:
+        return
+    relative_path = url.lstrip('/')
+    file_path = BASE_DIR / relative_path
+    if file_path.exists():
+        file_path.unlink()
 
 
 async def get_product_by_id(product_id: int, db: AsyncSession):
@@ -137,10 +175,15 @@ async def get_products_from_db(db: AsyncSession, page: int, page_size: int,
 
 
 async def create_and_get_product(product: ProductCreate,
+                                 image: UploadFile | None,
                                  db: AsyncSession,
                                  current_seller: UserModel):
-    db_product = ProductModel(**product.model_dump(),
-                              seller_id=current_seller.id)
+    image_url = await save_product_image(image) if image else None
+    db_product = ProductModel(
+        **product.model_dump(),
+        image_url=image_url,
+        seller_id=current_seller.id
+    )
     db.add(db_product)
     await db.commit()
     await db.refresh(db_product)
@@ -149,11 +192,15 @@ async def create_and_get_product(product: ProductCreate,
 
 async def update_and_get_product(db_product,
                                  product: ProductCreate,
+                                 image: UploadFile | None,
                                  db: AsyncSession):
     await db.execute(update(ProductModel)
                .where(ProductModel.id == db_product.id)
                .values(**product.model_dump())
                )
+    if image:
+        remove_product_image(db_product.image_url)
+        db_product.image_url = await save_product_image(image)
     await db.commit()
     await db.refresh(db_product)
     return db_product
@@ -167,11 +214,14 @@ async def check_product_seller(product, current_seller: UserModel):
 
 
 async def delete_and_get_product(db_product, db: AsyncSession):
+    remove_product_image(db_product.image_url)
     await db.execute(update(ProductModel)
                .where(ProductModel.id == db_product.id,
                       ProductModel.is_active == True)
-               .values(is_active=False)
+               .values(is_active=False,
+                       image_url=None)
                )
+
     await db.commit()
     await db.refresh(db_product)
     return db_product
