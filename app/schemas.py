@@ -417,3 +417,13 @@ class OrderList(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
 
+class OrderCheckoutResponse(BaseModel):
+    order: Annotated[Order, Field(
+        description='Created order'
+    )]
+
+    confirmation_url: Annotated[str | None, Field(
+        default=None,
+        description='URL to pay the order in YooKassa'
+    )]
+
