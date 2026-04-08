@@ -8,7 +8,7 @@ from yookassa import Configuration, Payment
 from app.config import yookassa_cfg, get_yookassa_key
 
 
-async def get_yookassa_payment(
+async def create_yookassa_payment(
         *,
         order_id: int,
         amount: Decimal,
@@ -34,7 +34,7 @@ async def get_yookassa_payment(
         },
         'receipt': { # ФИСКальный ЧЕК (обязателен по 54-ФЗ для РФ!)
             'customer': {
-                'user_email': user_email
+                'email': user_email
             },
             'items': [ # здесь 1 item - весь заказ
                 {

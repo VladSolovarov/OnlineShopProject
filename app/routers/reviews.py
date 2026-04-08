@@ -2,8 +2,8 @@ from fastapi import APIRouter, Depends, status
 
 from app.auth import get_current_buyer, get_current_user
 from app.models.users import User as UserModel
-from app.routers.operations.products_operations import get_product_by_id
-from app.routers.operations.reviews_operations import create_and_get_review, \
+from app.services.products import get_product_by_id
+from app.services import create_and_get_review, \
     get_reviews_from_db, check_admin_or_author, get_review_by_id, delete_and_get_review
 from app.schemas import Review as ReviewSchema, ReviewCreate
 from app.db_depends import get_async_db

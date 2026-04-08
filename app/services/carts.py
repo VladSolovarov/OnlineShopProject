@@ -1,6 +1,5 @@
-from fastapi import HTTPException, status
-from sqlalchemy import select, update, delete
-from sqlalchemy.ext.asyncio import AsyncSession
+from fastapi import HTTPException
+from sqlalchemy import select, delete
 
 from decimal import Decimal
 
@@ -8,10 +7,9 @@ from sqlalchemy.orm import selectinload
 
 from app.models import CartItem as CartItemModel, User as UserModel
 from app.schemas import (
-    Cart as CartSchema, CartItem as CartItemSchema,
-    CartItemCreate, CartItemUpdate
+    Cart as CartSchema, CartItemCreate, CartItemUpdate
 )
-from app.routers.operations.products_operations import get_product_by_id
+from app.services.products import get_product_by_id
 from sqlalchemy.ext.asyncio import AsyncSession
 
 
@@ -27,14 +25,17 @@ async def get_cart_item(user_id: int, product_id: int, db: AsyncSession):
 
 
 async def get_items_from_user_cart(user: UserModel, db: AsyncSession):
-    items_stmt = (
+    cart_stmt = (
         select(CartItemModel)
         .options(selectinload(CartItemModel.product))
         .where(CartItemModel.user_id == user.id)
         .order_by(CartItemModel.id)
     )
-    items = (await db.scalars(items_stmt)).all()
-    return items
+    cart_items = (await db.scalars(cart_stmt)).all()
+    if not cart_items:
+        raise HTTPException(status_code=400,
+                            detail='Cart is empty')
+    return cart_items
 
 
 async def get_user_cart(user: UserModel, db: AsyncSession):

@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends
 
-from app.routers.operations.categories_operations import get_categories_from_db, check_category_by_id, \
+from app.services import get_categories_from_db, check_category_by_id, \
     create_and_get_category, update_and_get_category, delete_and_get_category, get_category_by_id
 from app.schemas import CategoryCreate, Category as CategorySchema
 from app.models.users import User as UserModel

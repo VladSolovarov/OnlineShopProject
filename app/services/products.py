@@ -1,21 +1,20 @@
 from pathlib import Path
 from fastapi import (
-    HTTPException, status, HTTPException,
-    status, UploadFile, File, Form
+    HTTPException,
+    status, UploadFile
 )
 from sqlalchemy import select, update, func, and_, asc, desc, or_
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models import Product as ProductModel, Category as CategoryModel, User as UserModel
-from app.routers.operations.categories_operations import check_category_by_id
+from app.services.categories import check_category_by_id
 from app.schemas import ProductCreate
 
 from enum import Enum
-from pathlib import Path
 import uuid
 
 
-BASE_DIR = Path(__file__).resolve().parent.parent.parent.parent
+BASE_DIR = Path(__file__).resolve().parent.parent.parent
 MEDIA_ROOT = BASE_DIR / "media" / "products"
 MEDIA_ROOT.mkdir(parents=True, exist_ok=True)
 ALLOWED_TYPES = {'image/jpeg', 'image/png', 'image/webp'}
@@ -120,7 +119,7 @@ async def get_filters(db: AsyncSession, category_id, min_price,
     return filters
 
 
-async def get_search_filter_and_rank(db: AsyncSession, search, filters):
+async def get_search_filters_and_rank(search, filters):
     rank_col = None
     if search is not None:
         search = search.strip().lower()
@@ -144,9 +143,9 @@ async def get_products_from_db(db: AsyncSession, page: int, page_size: int,
                                search: str | None, filters_sequence: tuple,
                                sort_by: ProductSortField,
                                order: SortOrder):
-    """get filtered products"""
+    """get filtered and sorted products on the chosen page"""
     db_filters = await get_filters(db, *filters_sequence)
-    db_filters, search_rank = await get_search_filter_and_rank(db, search, db_filters)
+    db_filters, search_rank = await get_search_filters_and_rank(search, db_filters)
 
     total = await get_total_products(db, db_filters)
     sort_by = get_sort(sort_by, order)

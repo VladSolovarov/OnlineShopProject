@@ -1,9 +1,6 @@
 from fastapi import APIRouter, Depends, Response
 
-from decimal import Decimal
-
 from app.models import (
-    CartItem as CartItemModel,
     User as UserModel
 )
 from app.schemas import (
@@ -13,8 +10,8 @@ from app.schemas import (
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.db_depends import get_async_db
 from app.auth import get_current_user
-from app.routers.operations.carts_operations import (
-    get_items_from_user_cart, get_user_cart, create_or_update_cart,
+from app.services import (
+    get_user_cart, create_or_update_cart,
     update_and_get_cart_item_by_product_id, delete_cart_item,
     clear_all_items_from_user_cart
 )

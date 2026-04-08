@@ -4,8 +4,9 @@ from sqlalchemy import select, delete, func
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
+from app.payments import create_yookassa_payment
 from app.models import Order as OrderModel, OrderItem as OrderItemModel, User as UserModel, CartItem as CartItemModel
-from app.schemas import OrderList
+from app.schemas import OrderList, OrderCheckoutResponse
 
 
 async def load_order_with_items(order_id: int, db: AsyncSession) -> OrderModel | None:
@@ -21,11 +22,40 @@ async def load_order_with_items(order_id: int, db: AsyncSession) -> OrderModel |
     return order_db
 
 
+async def payment_transaction(
+        order: OrderModel,
+        user_email: str,
+        db: AsyncSession
+) -> dict:
+    try:
+        await db.flush()
+        payment_info = await create_yookassa_payment(
+            order_id=order.id,
+            amount=order.total_amount,
+            user_email=user_email,
+            description=f"Payment for Order №{order.id}"
+        )
+    except RuntimeError as exc:
+        await db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=str(exc)
+        ) from exc
+    except Exception as exc:
+        await db.rollback()
+        print(exc)
+        raise HTTPException(
+            status_code=status.HTTP_502_BAD_GATEWAY,
+            detail='Cannot initialize payment'
+        ) from exc
+
+    return payment_info
+
+
 async def add_items_to_order(cart_items: list, user: UserModel, db: AsyncSession):
     if not cart_items:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST,
                             detail="User does not have items in cart")
-
     order = OrderModel(user_id=user.id)
     total_amount = Decimal('0')
 
@@ -34,21 +64,18 @@ async def add_items_to_order(cart_items: list, user: UserModel, db: AsyncSession
         if prod is None or not prod.is_active:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail=f"Product ID{cart_item.product_id} is not available"
+                detail=f"Product ID={cart_item.product_id} is not available"
             )
-
         if cart_item.quantity > prod.stock:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail=f"Too many items '{prod.name}' (cart: {cart_item.quantity}, stock: {prod.stock})"
             )
-
         if (unit_price := prod.price) is None:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail=f"Product '{prod.name}' has no price set"
             )
-
         total_price = unit_price * cart_item.quantity
         total_amount += total_price
 
@@ -61,20 +88,26 @@ async def add_items_to_order(cart_items: list, user: UserModel, db: AsyncSession
             )
         )
         prod.stock -= cart_item.quantity
+
     order.total_amount = total_amount
     db.add(order)
+    payment_info = await payment_transaction(order, user.email, db)
+    order.payment_id = payment_info.get('id')
+
     await db.execute(
         delete(CartItemModel)
         .where(CartItemModel.user_id == user.id)
     )
     await db.commit()
-
     created_order = await load_order_with_items(order.id, db)
 
     if created_order is None:
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                             detail="Failed to load created order")
-    return created_order
+    return OrderCheckoutResponse(
+        order=created_order,
+        confirmation_url=payment_info.get('confirmation_url')
+    )
 
 
 async def create_and_get_order_list(

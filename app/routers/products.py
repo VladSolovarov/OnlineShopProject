@@ -5,18 +5,17 @@ from app.auth import get_current_seller
 from app.schemas import Product as ProductSchema, ProductCreate, ProductList
 from app.models.users import User as UserModel
 
-from app.routers.operations.products_operations import (
+from app.services import (
     get_products_from_db,
     get_product_by_id,
     create_and_get_product,
     update_and_get_product,
     check_product_seller,
     delete_and_get_product,
-    ProductSortField, SortOrder,
-    save_product_image
+    ProductSortField, SortOrder
 )
 
-from app.routers.operations.categories_operations import check_category_by_id
+from app.services.categories import check_category_by_id
 
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.db_depends import get_async_db
@@ -44,7 +43,7 @@ async def get_all_products(
         seller_id: int | None = Query(
             default=None, description="Seller ID for filtering"),
         sort_by: ProductSortField = Query(
-            default=ProductSortField.ID, description="Use sorting by date, price or rating"),
+            default=ProductSortField.ID, description="Use sorting by date, name, price or rating"),
         sorting_order: SortOrder = Query(
             default=SortOrder.ASC, description="Sorting order by ascending or descending (asc, desc)"),
         db: AsyncSession = Depends(get_async_db)

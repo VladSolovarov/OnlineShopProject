@@ -3,7 +3,7 @@ from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.auth import get_current_admin, create_refresh_token, create_access_token
-from app.routers.operations.users_operations import check_new_email, get_user_by_id, \
+from app.services import check_new_email, get_user_by_id, \
     authenticate_user, create_and_get_user, update_role_by_id_and_get_user, get_id_by_refresh_token
 from app.models import User as UserModel
 from app.schemas import UserCreate, User as UserSchema, UserRoleUpdate, RefreshTokenRequest
