@@ -16,7 +16,8 @@ from app.services.categories import (
 from app.services.orders import (
     add_items_to_order,
     create_and_get_order_list,
-    get_order_by_id
+    get_order_by_id,
+    get_order_payment_info
 )
 
 from app.services.products import (
@@ -73,6 +74,7 @@ __all__ = [
     "add_items_to_order",
     "create_and_get_order_list",
     "get_order_by_id",
+    "get_order_payment_info",
     # products
     "get_products_from_db",
     "get_product_by_id",

@@ -69,7 +69,7 @@ async def add_items_to_order(cart_items: list, user: UserModel, db: AsyncSession
         if cart_item.quantity > prod.stock:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail=f"Too many items '{prod.name}' (cart: {cart_item.quantity}, stock: {prod.stock})"
+                detail=f"Too many items '{prod.name}' (cart: {cart_item.quantity}, in stock: {prod.stock})"
             )
         if (unit_price := prod.price) is None:
             raise HTTPException(
@@ -123,7 +123,10 @@ async def create_and_get_order_list(
 
     orders_stmt = (
         select(OrderModel)
-        .options(selectinload(OrderModel.items).selectinload(OrderItemModel.product))
+        .options(
+            selectinload(OrderModel.items)
+            .selectinload(OrderItemModel.product)
+        )
         .where(OrderModel.user_id == current_user.id)
         .offset((page - 1) * page_size)
         .limit(page_size)
@@ -142,3 +145,34 @@ async def get_order_by_id(
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
                             detail='Order not found')
     return order
+
+
+async def get_order_payment_info(
+        order_id: int,
+        user: UserModel,
+        db: AsyncSession
+):
+    order_stmt = select(OrderModel).where(OrderModel.id == order_id)
+    order = (await db.scalars(order_stmt)).one_or_none()
+    if order is None or order.user_id != user.id:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
+                            detail='Order not found')
+
+    messages = {
+        'paid': f"Спасибо! Заказ #{order.id} оплачен. Ожидайте доставку.",
+        'pending': "Оплата в процессе..."
+    }
+
+    return {
+        'order_id': order.id,
+        'status': order.status,
+        'paid_at': order.paid_at,
+        'message': messages.get(order.status, "Оплата не прошла. Попробуйте ещё раз.")
+    }
+
+
+
+
+
+
+

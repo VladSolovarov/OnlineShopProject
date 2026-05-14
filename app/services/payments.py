@@ -8,6 +8,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from starlette import status
 
 from yookassa.domain.notification import WebhookNotification
+from yookassa.domain.response import PaymentResponse
 
 from app.models import Order as OrderModel
 
@@ -78,7 +79,7 @@ def get_payment(payload):
 
 
 async def get_order_db(
-        payment,
+        payment: PaymentResponse,
         db: AsyncSession) -> OrderModel | None:
     order_id = payment.metadata.get('order_id') if payment.metadata else None
     if order_id is None:
@@ -96,7 +97,7 @@ async def get_order_db(
 
 
 async def get_response_update_order(
-        payment,
+        payment: PaymentResponse,
         order_db: OrderModel | None,
         db: AsyncSession
 ) -> dict:
@@ -109,6 +110,5 @@ async def get_response_update_order(
             order_db.payment_id = payment.id
     elif payment.status == 'canceled':
         order_db.status = 'canceled'
-
     await db.commit()
     return {'status': 'ok'}

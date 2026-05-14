@@ -11,7 +11,8 @@ from app.services.carts import get_items_from_user_cart
 from app.services import (
     add_items_to_order,
     create_and_get_order_list,
-    get_order_by_id
+    get_order_by_id,
+    get_order_payment_info
 )
 from app.schemas import Order as OrderSchema, OrderList, OrderCheckoutResponse
 
@@ -45,3 +46,12 @@ async def get_order(
         db: AsyncSession = Depends(get_async_db)
 ):
     return await get_order_by_id(order_id, current_user, db)
+
+
+@router.get('/{order_id}/status')
+async def get_order_status(
+        order_id: int,
+        current_user: UserModel = Depends(get_current_user),
+        db: AsyncSession = Depends(get_async_db)
+) -> dict:
+    return await get_order_payment_info(order_id, current_user, db)

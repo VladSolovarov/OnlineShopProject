@@ -55,7 +55,7 @@ async def create_yookassa_payment(
     def _request() -> Payment:
         return Payment.create(payload, str(uuid4())) # POST запрос к API YOOKASSA
 
-    # Вызов в thread (библиотека YooKassa синхронная, а FastAPI ассинхронный)
+    # Вызов в thread (библиотека YooKassa синхронная, а FastAPI асинхронный)
     payment: Payment = await to_thread.run_sync(_request)
     # URL для оплаты
     confirmation_url = getattr(payment.confirmation, 'confirmation_url', None)
